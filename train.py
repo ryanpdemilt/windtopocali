@@ -4,7 +4,7 @@ import torch
 import torchvision
 from torchvision import transforms
 
-from WindTopoCali.utils.loss import CustomLoss
+from windtopocali.utils.loss import CustomLoss
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--root_file',type=str,required=False,default='../data/WindTopoCali/')
@@ -23,7 +23,14 @@ weather_std = [0,0,0,0,0,0,0]
 
 weather_transform = torch.nn.Sequential([
     transforms.CenterCrop(16),
-    transforms.Normalize(mean=weather_means,std = weather_std)
+    transforms.Normalize(mean=weather_means,std = weather_std),
+    transforms.Resize(64)
+])
+
+weather_lr_transform = torch.nn.Sequential([
+    transforms.CenterCrop(8),
+    
+    transforms.Resize(64)
 ])
 
 topo_means = [0,0,0,0]
@@ -31,7 +38,13 @@ topo_std = [0,0,0,0]
 
 topo_transform = torch.nn.Sequential([
     transforms.CenterCrop(400),
-    transforms.Normalize(mean = topo_means,std=topo_std)
+    transforms.Normalize(mean = topo_means,std=topo_std),
+    transforms.Resize(128)
 ])
 
+topo_lr_transform = torch.nn.Sequential([
+    transforms.CenterCrop(100),
+    transforms.Normalize(mean = topo_means,std=topo_std),
+    transforms.Resize(128)
+])
 
