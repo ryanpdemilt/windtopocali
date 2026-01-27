@@ -13,6 +13,7 @@ import rasterio
 class WindTopoDataset(Dataset):
     def __init__(self,
                  root_file='../data/WindTopoCali/',
+                 target_file='norcal_wind_data.csv',
                  train=True,
                  weather_transform=None,
                  weather_lr_transform = None,
@@ -23,6 +24,7 @@ class WindTopoDataset(Dataset):
     ):
         
         self.root_file = root_file
+        self.target_file = target_file
         self.train = train
 
         self.weather_transform = weather_transform
@@ -46,7 +48,7 @@ class WindTopoDataset(Dataset):
 
         self.topo_lookup = dict(zip([file.split('_')[0] for file in self.topo_files],self.topo_files))
 
-        self.station_data_fname = self.data_root + 'norcal_wind_data.csv'
+        self.station_data_fname = self.data_root + self.target_file
         self.station_data = pd.read_csv(self.station_data_fname) 
 
 
@@ -97,8 +99,7 @@ class WindTopoDataset(Dataset):
             'rtma_lr':rtma_lr_tensor,
             'topo':topo_hr_tensor,
             'topo_lr':topo_lr_tensor,
-            'target':target,
-            'date':dt
+            'target':target
         }
 
         return output
