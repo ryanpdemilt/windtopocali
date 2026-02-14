@@ -8,7 +8,7 @@ import datetime
 import numpy as np
 import pandas as pd
 
-import rasterio
+import tifffile
 
 class WindTopoDataset(Dataset):
     def __init__(self,
@@ -21,8 +21,7 @@ class WindTopoDataset(Dataset):
                  topo_lr_transform = None,
                  climate_vars = ['TMP','UGRD','VGRD','SPFH','ACPC01','HGT','GUST'],
                  topo_vars = ['elevation','slope','aspect','mtpi']
-    ):
-        
+    ):        
         self.root_file = root_file
         self.target_file = target_file
         self.train = train
@@ -46,10 +45,30 @@ class WindTopoDataset(Dataset):
         self.rtma_files = [file for file in self.file_list if 'rtma' in file]
         self.topo_files = [file for file in self.file_list if 'dem' in file]
 
-        self.topo_lookup = dict(zip([file.split('_')[0] for file in self.topo_files],self.topo_files))
+        self.topo_lookup = dict(zip([file.split('_')[0].split('/')[-1] for file in self.topo_files],[tifffile.imread(file) for file in self.topo_files]))
 
-        self.station_data_fname = self.data_root + self.target_file
-        self.station_data = pd.read_csv(self.station_data_fname) 
+        self.station_data_fname = self.root_file + self.target_file
+        self.station_data = pd.read_csv(self.station_data_fname)
+        self.station_data['DATE'] = pd.to_datetime(self.station_data['DATE'],format='%Y-%m-%dT%H:%M:%S')
+        self.station_data['DATE'] = self.station_data['DATE'].dt.round('h')
+
+        self.station_data = self.station_data.drop_duplicates(['STATION','DATE'])
+        self.targets_list = []
+        self.matching_topos = []
+        for rtma_sample_fname in self.rtma_files:
+            station, year,month,day,hour, _= rtma_sample_fname.split('_')
+            station = station.split('/')[-1]
+
+            dt = datetime.datetime(int(year),int(month),int(day),int(hour))
+
+            target_row = self.station_data[(self.station_data['STATION'] == station) & (self.station_data['DATE'] == dt)]
+            uwnd = target_row['UWND'].item()
+            vwnd = target_row['VWND'].item()
+
+            matching_topo = self.topo_lookup[station]
+
+            self.targets_list.append([uwnd,vwnd])
+            self.matching_topos.append(matching_topo)
 
 
     def __len__(self):
@@ -58,15 +77,11 @@ class WindTopoDataset(Dataset):
         rtma_sample_fname = self.rtma_files[idx]
 
         station, year,month,day,hour, _= rtma_sample_fname.split('_')
+        station = station.split('/')[-1]
 
-        dt = datetime.datetime(year,month,day,hour)
+        dt = datetime.datetime(int(year),int(month),int(day),int(hour))
 
-        topo_file_fname = self.topo_lookup[station]
-
-        rtma_src = rasterio.open(rtma_sample_fname)
-        rtma_arr = rtma_src.read()
-
-        rtma_tensor = torch.from_numpy(rtma_arr)
+        rtma_tensor = torch.from_numpy(tifffile.imread(rtma_sample_fname).transpose((2,0,1)).astype(np.float32))
 
         if self.weather_transform is not None:
             rtma_hr_tensor = self.weather_transform(rtma_tensor)
@@ -76,8 +91,7 @@ class WindTopoDataset(Dataset):
         if self.weather_lr_transform is not None:
             rtma_lr_tensor = self.weather_lr_transform(rtma_tensor)
 
-        topo_src = rasterio.open(topo_file_fname)
-        topo_arr = topo_src.read()
+        topo_tensor = torch.from_numpy(self.matching_topos[idx].copy().transpose((2,0,1)).astype(np.float32))
 
         if self.topo_transform is not None:
             topo_hr_tensor = self.topo_transform(topo_tensor)
@@ -89,10 +103,15 @@ class WindTopoDataset(Dataset):
         else:
             topo_lr_tensor = topo_tensor
 
-        topo_tensor = torch.from_numpy(topo_arr)
+        rtma_hr_tensor = rtma_hr_tensor.float()
+        rtma_lr_tensor = rtma_lr_tensor.float()
 
-        target_row = self.station_data[self.station_data['STATION'] == station and self.station_data['DATE'] == dt]
-        target = torch.tensor([target_row['UWND','VWND']])
+        topo_hr_tensor = topo_hr_tensor.float()
+        topo_lr_tensor = topo_lr_tensor.float()
+
+        uwnd, vwnd = self.targets_list[idx]
+
+        target = torch.tensor([uwnd,vwnd]).float()
 
         output = {
             'rtma':rtma_hr_tensor,

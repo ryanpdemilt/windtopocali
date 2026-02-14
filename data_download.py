@@ -22,12 +22,16 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--sample_file',type=str,default='sample.csv',required=False)
 parser.add_argument('--output_folder',type=str,default='./data/WindTopoCali/',required=False)
 
+args = parser.parse_args()
+
+sample_file = args.sample_file
+output_folder = args.output_folder
+
 ee.Authenticate()
 ee.Initialize(
     opt_url='https://earthengine-highvolume.googleapis.com',
     project='eofm-benchmark'
 )
-sample_file = '/content/drive/My Drive/WindTopoCaliFull/sample_2021.csv'
 
 samples = pd.read_csv(sample_file)
 samples['DATE'] = pd.to_datetime(samples['DATE'],format='%Y-%m-%dT%H:%M:%S')
@@ -85,7 +89,7 @@ def get_station_dem_request(station):
 
   fname = f'{station}'
 
-  dem_fname = '/content/drive/My Drive/WindTopoCaliFull/train/' + fname + '_dem.tif'
+  dem_fname = output_folder + fname + '_dem.tif'
 
   url = dem_sample_combine.getDownloadURL(
       {
@@ -121,7 +125,7 @@ def get_rtma_sample_request(record):
   fname = f'{station}_{year}_{month}_{day}_{hour}'
 
 
-  rtma_fname = '/content/drive/My Drive/WindTopoCaliFull/train' + fname + '_rtma.tif'
+  rtma_fname = output_folder + fname + '_rtma.tif'
 
   url = rtma_sample.getDownloadURL(
       {
@@ -139,7 +143,7 @@ def get_rtma_sample_request(record):
 
   with open(rtma_fname,'wb') as out_file:
     shutil.copyfileobj(r.raw,out_file)
-  print('Done:', station)
+  print('Done:{} {}-{}-{} {}:00'.format(station,year,month,day,hour))
 
 
 unique_stations = pd.unique(samples['STATION'])

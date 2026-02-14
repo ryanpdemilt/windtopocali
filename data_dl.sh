@@ -1,0 +1,1 @@
+python3 data_download.py --sample_file data/WindTopoLarge/sample_2021_10k.csv --output_folder data/WindTopoLarge/train/

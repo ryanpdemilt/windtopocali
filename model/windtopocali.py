@@ -14,16 +14,13 @@ class WindTopoCali(nn.Module):
                  wind_in_size,
                  n_topo_channels,
                  topo_in_size,
-                 output_channels,
-                 model_type,
                  device=None
                 ):
+        super(WindTopoCali, self).__init__()
         self.n_weather_channels = n_weather_channels
         self.wind_in_size = wind_in_size
         self.n_topo_channels = n_topo_channels
         self.topo_in_size = topo_in_size
-        self.output_channels = output_channels
-        self.model_type = model_type
         self.device = device
 
         if self.device is None:
@@ -41,43 +38,70 @@ class WindTopoCali(nn.Module):
         self.n_channel_fusion_out = 128
         self.out_fc_dim = self.n_channel_fusion_out * 2
 
+        # self.lr_weather_net = resnet8(in_channels=self.n_weather_channels,output_dim=self.n_channel_out_lr_encode)
+        self.lr_weather_net = nn.Sequential(
+            nn.Conv2d(in_channels=self.n_weather_channels, out_channels=self.n_channel_out_lr_encode, kernel_size=7, stride=2, padding=3, bias=False),
+            ResidualBlock(in_channels=self.n_channel_out_lr_encode,out_channels=self.n_channel_out_lr_encode,stride=1),
+            nn.AdaptiveAvgPool2d((1, 1)),
+            Flatten(1),
+            nn.Linear(self.n_channel_out_lr_encode,self.n_channel_out_lr_encode)
 
-        self.lr_weather_net = resnet8(in_channels=self.n_weather_channels,output_dim=self.n_channel_out_lr_encode)
-        self.hr_weather_net = resnet8(in_channels=self.n_weather_channels,output_dim=self.n_channel_out_hr_encode)
+        )
 
-        self.lr_topo_net = resnet8(in_channels=self.n_topo_channels,output_dim=self.n_channel_out_lr_encode)
-        self.hr_topo_net = resnet8(in_channels=self.n_topo_channels,output_dim=self.n_channel_out_hr_encode)
+        # downsample = nn.Sequential(
+        #     nn.Conv2d(self.in_channels, out_channels, kernel_size=1, stride=stride, bias=False),
+        #     nn.BatchNorm2d(out_channels)
+        # )
 
-        self.hr_fusion_conv = nn.Sequential([
-            nn.Conv2d(self.n_channel_in_hr_fusion,64,kernel_size=3,stride=1,padding=0),
-            nn.SiLU(),
-            nn.AvgPool2d(kernel_size=3,stride=2,padding=0),
-            nn.Conv2d(64,128,kernel_size=3,stride=1,paddin=0),
-            nn.SiLU(),
-            nn.Conv2d(128,self.n_channel_fusion_out,kernel_size=3,stride=1,padding=0)
-        ])
+        # self.hr_weather_net = resnet8(in_channels=self.n_weather_channels,output_dim=self.n_channel_out_hr_encode)
+        self.hr_weather_net = nn.Sequential(
+            nn.Conv2d(in_channels=self.n_weather_channels, out_channels=self.n_channel_out_hr_encode, kernel_size=7, stride=2, padding=3, bias=False),
+            ResidualBlock(in_channels=self.n_channel_out_hr_encode,out_channels=self.n_channel_out_hr_encode,stride=1),
+            nn.AdaptiveAvgPool2d((1, 1)),
+            Flatten(1),
+            nn.Linear(self.n_channel_out_hr_encode,self.n_channel_out_hr_encode)   
+        )   
 
-        self.lr_fusion_conv = nn.Sequential([
-            nn.Conv2d(self.n_channel_in_lr_fusion,64,kernel_size=3,stride=1,padding=0),
-            nn.SiLU(),
-            nn.AvgPool2d(kernel_size=3,stride=2,padding=0),
-            nn.Conv2d(64,128,kernel_size=3,stride=1,paddin=0),
-            nn.SiLU(),
-            nn.Conv2d(128,self.n_channel_fusion_out,kernel_size=3,stride=1,padding=0)
-        ])
+        # self.lr_topo_net = resnet8(in_channels=self.n_topo_channels,output_dim=self.n_channel_out_lr_encode)
+        self.lr_topo_net = nn.Sequential(
+            nn.Conv2d(in_channels=self.n_topo_channels, out_channels=self.n_channel_out_lr_encode, kernel_size=7, stride=2, padding=3, bias=False),
+            ResidualBlock(in_channels=self.n_channel_out_lr_encode,out_channels=self.n_channel_out_lr_encode,stride=1),
+            nn.AdaptiveAvgPool2d((1, 1)),
+            Flatten(1),
+            nn.Linear(self.n_channel_out_lr_encode,self.n_channel_out_lr_encode)   
+        )   
+   
+        # self.hr_topo_net = resnet8(in_channels=self.n_topo_channels,output_dim=self.n_channel_out_hr_encode)
+        self.hr_topo_net = nn.Sequential(
+            nn.Conv2d(in_channels=self.n_topo_channels, out_channels=self.n_channel_out_hr_encode, kernel_size=7, stride=2, padding=3, bias=False),
+            ResidualBlock(in_channels=self.n_channel_out_hr_encode,out_channels=self.n_channel_out_hr_encode,stride=1),   
+            nn.AdaptiveAvgPool2d((1, 1)),
+            Flatten(1),
+            nn.Linear(self.n_channel_out_lr_encode,self.n_channel_out_lr_encode)
+        )   
+
+        self.hr_fusion_conv = nn.Sequential(
+            nn.Linear(self.n_channel_in_lr_fusion,self.n_channel_fusion_out),
+            nn.SiLU()
+        )
+
+        self.lr_fusion_conv = nn.Sequential(
+            nn.Linear(self.n_channel_in_lr_fusion,self.n_channel_fusion_out),
+            nn.SiLU()
+        )
 
         
-        self.fc_final_block = nn.Sequential([
+        self.fc_final_block = nn.Sequential(
             nn.Linear(self.out_fc_dim, 512),
             nn.SiLU(),
             nn.Linear(512, 128),
             nn.SiLU(),
             nn.Linear(128, 32),
             nn.SiLU(),
-            nn.Linear(32, 8),
+            nn.Linear(32, 16),
             nn.SiLU(),
-            nn.Linear(8, 2)
-        ])
+            nn.Linear(16, 2)
+        )
 
     def forward(self,x):
 
@@ -142,6 +166,12 @@ def direction_mask(u, v, n, m):
 
     return mask
 
+class Flatten(nn.Module):
+    def __init__(self,start_dim=1):
+        super(Flatten,self).__init__()
+        self.start_dim = start_dim
+    def forward(self,input):
+        return torch.flatten(input,start_dim=self.start_dim)
 
 
 class ResidualBlock(nn.Module):
@@ -167,41 +197,43 @@ class ResidualBlock(nn.Module):
 
         out += identity
 
-class BottleneckBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, stride=1, downsample=None):
-        super(BottleneckBlock, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=1, bias=False)
-        self.bn1 = nn.BatchNorm2d(out_channels)
-        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=stride, padding=1, bias=False)
-        self.bn2 = nn.BatchNorm2d(out_channels)
-        self.conv3 = nn.Conv2d(out_channels, out_channels * 4, kernel_size=1, bias=False)
-        self.bn3 = nn.BatchNorm2d(out_channels * 4)
-        self.relu = nn.ReLU(inplace=True)
-        self.downsample = downsample
-
-    def forward(self, x):
-        identity = x
-        if self.downsample:
-            identity = self.downsample(x)
-
-        out = self.conv1(x)
-        out = self.bn1(out)
-        out = self.relu(out)
-        out = self.conv2(out)
-        out = self.bn2(out)
-        out = self.relu(out)
-        out = self.conv3(out)
-        out = self.bn3(out)
-
-        out += identity
         return self.relu(out)
+
+# class BottleneckBlock(nn.Module):
+#     def __init__(self, in_channels, out_channels, stride=1, downsample=None):
+#         super(BottleneckBlock, self).__init__()
+#         self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=1, bias=False)
+#         self.bn1 = nn.BatchNorm2d(out_channels)
+#         self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=stride, padding=1, bias=False)
+#         self.bn2 = nn.BatchNorm2d(out_channels)
+#         self.conv3 = nn.Conv2d(out_channels, out_channels * 4, kernel_size=1, bias=False)
+#         self.bn3 = nn.BatchNorm2d(out_channels * 4)
+#         self.relu = nn.ReLU(inplace=True)
+#         self.downsample = downsample
+
+#     def forward(self, x):
+#         identity = x
+#         if self.downsample:
+#             identity = self.downsample(x)
+
+#         out = self.conv1(x)
+#         out = self.bn1(out)
+#         out = self.relu(out)
+#         out = self.conv2(out)
+#         out = self.bn2(out)
+#         out = self.relu(out)
+#         out = self.conv3(out)
+#         out = self.bn3(out)
+
+#         out += identity
+#         return self.relu(out)
 class ResNet(nn.Module):
     def __init__(self, block, layers, input_channels = 3,num_classes=512):
         super(ResNet, self).__init__()
         self.in_channels = 64
 
         # Initial convolution and max pooling layers
-        self.conv1 = nn.Conv2d(input_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
+        self.conv1 = nn.Conv2d(in_channels=input_channels, out_channels=64, kernel_size=7, stride=2, padding=3, bias=False)
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
@@ -259,4 +291,4 @@ class ResNet(nn.Module):
                 nn.init.constant_(m.bias, 0)
 
 def resnet8(in_channels=3,output_dim=512):
-    return ResNet(ResidualBlock,[1,1,1,1],in_channels=in_channels,num_classes=output_dim)
+    return ResNet(ResidualBlock,[1,1,1,1],input_channels=in_channels,num_classes=output_dim)

@@ -56,8 +56,6 @@ class CustomLoss(_Loss):
 
     def __init__(self, size_average=None, reduce=None, reduction='mean'):
         super(CustomLoss, self).__init__(size_average, reduce, reduction)
-        if USE_GPU:
-            self.to(t_device)
 
     def forward(self, input, target):
         return customloss(input, target, reduction=self.reduction)
