@@ -26,7 +26,7 @@ Each year has >3 million observations so data is not limited and needs to be sam
     - Station Longitude
     - U-component of Wind
     - V-component of Wind
-- RTMA @ 2.5km resolution
+- RTMA @ 2.5km resolution (24x24 pixels)
     - HGT: model terrain elevation
     - TMP: temperature
     - SPFH: specific humidity
@@ -34,20 +34,52 @@ Each year has >3 million observations so data is not limited and needs to be sam
     - GUST: wind gust speed
     - UGRD: u component of wind
     - VGRD: v component of wind
-- SRTM @ 100m resampled resolution
+- SRTM @ 100m resampled resolution (400x400 pixels )
     - elevation
     - slope
     - aspect
     - mtpi
 
-## Model Architecture
 
 
+## Model Architecture + Pipeline
+
+Weather Preprocess Chain:
+
+                                (HR)
+Raw RTMA Sample (24x24 pixels) ----> CenterCrop(16) -> Normalize -> Resize(64x64)
+                              |
+                              | (LR)
+                               ----> CenterCrop(8)  -> Normalize -> Resize(64x64)
+Topography Preprocess Chain
+
+                                  (HR)
+Raw SRTM Sample (400x400 pixels) ----> CenterCrop(400) -> Normalize -> Resize(128x128)
+                                |
+                                | (LR)
+                                 ----> CenterCrop(100)  -> Normalize -> Resize(128x128)
+
+
+Model Architecture:
+
+- Input: LR & HR Weather, LR and HR Topography
+- Ouptut: U & V components of Wind @ surface for a station centered on the region of the input images
+
+1. 4 x Resnet 8 Feature Extractor (Weather_lr,weather_hr,topo_lr,topo_hr)
+2. 2x Fusion Conv (HR & LR Topo+Weather)
+3. FC Regression Block 4 layers 
+
+- Choice of MSE loss or custom MSE based loss function with spread term
+- CosineAnnealingLR Secheduler
+- Adam Optimizer
 
 ## Model Evaluation
-
-
 
 ## Model Training
 
 ## Repository Layout
+
+- model
+    - windtopocali.py
+- dataset
+    - WindTopoDataset.py
