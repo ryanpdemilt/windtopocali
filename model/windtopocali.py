@@ -38,47 +38,47 @@ class WindTopoCali(nn.Module):
         self.n_channel_fusion_out = 128
         self.out_fc_dim = self.n_channel_fusion_out * 2
 
-        # self.lr_weather_net = resnet8(in_channels=self.n_weather_channels,output_dim=self.n_channel_out_lr_encode)
-        self.lr_weather_net = nn.Sequential(
-            nn.Conv2d(in_channels=self.n_weather_channels, out_channels=self.n_channel_out_lr_encode, kernel_size=7, stride=2, padding=3, bias=False),
-            ResidualBlock(in_channels=self.n_channel_out_lr_encode,out_channels=self.n_channel_out_lr_encode,stride=1),
-            nn.AdaptiveAvgPool2d((1, 1)),
-            Flatten(1),
-            nn.Linear(self.n_channel_out_lr_encode,self.n_channel_out_lr_encode)
+        self.lr_weather_net = resnet8(in_channels=self.n_weather_channels,output_dim=self.n_channel_out_lr_encode)
+        # self.lr_weather_net = nn.Sequential(
+        #     nn.Conv2d(in_channels=self.n_weather_channels, out_channels=self.n_channel_out_lr_encode, kernel_size=7, stride=2, padding=3, bias=False),
+        #     ResidualBlock(in_channels=self.n_channel_out_lr_encode,out_channels=self.n_channel_out_lr_encode,stride=1),
+        #     nn.AdaptiveAvgPool2d((1, 1)),
+        #     Flatten(1),
+        #     nn.Linear(self.n_channel_out_lr_encode,self.n_channel_out_lr_encode)
 
-        )
+        # )
 
         # downsample = nn.Sequential(
         #     nn.Conv2d(self.in_channels, out_channels, kernel_size=1, stride=stride, bias=False),
         #     nn.BatchNorm2d(out_channels)
         # )
 
-        # self.hr_weather_net = resnet8(in_channels=self.n_weather_channels,output_dim=self.n_channel_out_hr_encode)
-        self.hr_weather_net = nn.Sequential(
-            nn.Conv2d(in_channels=self.n_weather_channels, out_channels=self.n_channel_out_hr_encode, kernel_size=7, stride=2, padding=3, bias=False),
-            ResidualBlock(in_channels=self.n_channel_out_hr_encode,out_channels=self.n_channel_out_hr_encode,stride=1),
-            nn.AdaptiveAvgPool2d((1, 1)),
-            Flatten(1),
-            nn.Linear(self.n_channel_out_hr_encode,self.n_channel_out_hr_encode)   
-        )   
+        self.hr_weather_net = resnet8(in_channels=self.n_weather_channels,output_dim=self.n_channel_out_hr_encode)
+        # self.hr_weather_net = nn.Sequential(
+        #     nn.Conv2d(in_channels=self.n_weather_channels, out_channels=self.n_channel_out_hr_encode, kernel_size=7, stride=2, padding=3, bias=False),
+        #     ResidualBlock(in_channels=self.n_channel_out_hr_encode,out_channels=self.n_channel_out_hr_encode,stride=1),
+        #     nn.AdaptiveAvgPool2d((1, 1)),
+        #     Flatten(1),
+        #     nn.Linear(self.n_channel_out_hr_encode,self.n_channel_out_hr_encode)   
+        # )   
 
-        # self.lr_topo_net = resnet8(in_channels=self.n_topo_channels,output_dim=self.n_channel_out_lr_encode)
-        self.lr_topo_net = nn.Sequential(
-            nn.Conv2d(in_channels=self.n_topo_channels, out_channels=self.n_channel_out_lr_encode, kernel_size=7, stride=2, padding=3, bias=False),
-            ResidualBlock(in_channels=self.n_channel_out_lr_encode,out_channels=self.n_channel_out_lr_encode,stride=1),
-            nn.AdaptiveAvgPool2d((1, 1)),
-            Flatten(1),
-            nn.Linear(self.n_channel_out_lr_encode,self.n_channel_out_lr_encode)   
-        )   
+        self.lr_topo_net = resnet8(in_channels=self.n_topo_channels,output_dim=self.n_channel_out_lr_encode)
+        # self.lr_topo_net = nn.Sequential(
+        #     nn.Conv2d(in_channels=self.n_topo_channels, out_channels=self.n_channel_out_lr_encode, kernel_size=7, stride=2, padding=3, bias=False),
+        #     ResidualBlock(in_channels=self.n_channel_out_lr_encode,out_channels=self.n_channel_out_lr_encode,stride=1),
+        #     nn.AdaptiveAvgPool2d((1, 1)),
+        #     Flatten(1),
+        #     nn.Linear(self.n_channel_out_lr_encode,self.n_channel_out_lr_encode)   
+        # )   
    
-        # self.hr_topo_net = resnet8(in_channels=self.n_topo_channels,output_dim=self.n_channel_out_hr_encode)
-        self.hr_topo_net = nn.Sequential(
-            nn.Conv2d(in_channels=self.n_topo_channels, out_channels=self.n_channel_out_hr_encode, kernel_size=7, stride=2, padding=3, bias=False),
-            ResidualBlock(in_channels=self.n_channel_out_hr_encode,out_channels=self.n_channel_out_hr_encode,stride=1),   
-            nn.AdaptiveAvgPool2d((1, 1)),
-            Flatten(1),
-            nn.Linear(self.n_channel_out_lr_encode,self.n_channel_out_lr_encode)
-        )   
+        self.hr_topo_net = resnet8(in_channels=self.n_topo_channels,output_dim=self.n_channel_out_hr_encode)
+        # self.hr_topo_net = nn.Sequential(
+        #     nn.Conv2d(in_channels=self.n_topo_channels, out_channels=self.n_channel_out_hr_encode, kernel_size=7, stride=2, padding=3, bias=False),
+        #     ResidualBlock(in_channels=self.n_channel_out_hr_encode,out_channels=self.n_channel_out_hr_encode,stride=1),   
+        #     nn.AdaptiveAvgPool2d((1, 1)),
+        #     Flatten(1),
+        #     nn.Linear(self.n_channel_out_lr_encode,self.n_channel_out_lr_encode)
+        # )   
 
         self.hr_fusion_conv = nn.Sequential(
             nn.Linear(self.n_channel_in_lr_fusion,self.n_channel_fusion_out),
