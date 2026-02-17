@@ -14,7 +14,11 @@ Machine learning models offer us a means to bridge this gap, offering models whi
 
 The datasets in this repository are sourced from the ASOS Integrated Surface Global Hourly Dataset, the Real Time Mesoscale Analysis forecasting model, and the SRTM Digital Elevation map. The necessary variables for each are listed here
 
-All datasets are reprojected to EPSG:5070 and retrieved from the Earth Engine Data Catalog. Data points are collected hourly and randomly sampled from available ASOS observations.
+
+
+The RTMA and SRTM datasets are reprojected to EPSG:5070 and retrieved from the Earth Engine Data Catalog. Stations are divided into training and testing points are collected hourly and then randomly sampled from available ASOS observations, only data which pass the quality checks and originate from an NCEI source are checked to ensure high quality observations. 
+
+Each year has >3 million observations so data is not limited and needs to be sampled to an appropiate size. In the region of interest, there are ~300 operational stations.
 
 - ASOS ISD
     - STATION Id
@@ -36,8 +40,14 @@ All datasets are reprojected to EPSG:5070 and retrieved from the Earth Engine Da
     - aspect
     - mtpi
 
+## Model Architecture
+
+
+
 ## Model Evaluation
 
 
 
 ## Model Training
+
+## Repository Layout
