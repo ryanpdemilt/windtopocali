@@ -96,15 +96,20 @@ def get_asos(dst,year,shp):
         raise r.raise_for_status()
     
     archive_dst = dst / Path(f'{year}.tar.gz')
-    with open(archive_dst,'wb') as f:
-        total_length = r.headers.get('content-length')
-        for chunk in progress.bar(r.iter_content(chunk_size=1024), expected_size=(total_length/1024) + 1): 
-            if chunk:
-                f.write(chunk)
-                f.flush()
 
-    with tarfile.open(archive_dst) as f:
-        f.extractall(path=archive_dst.parent)
+    if not (archive_dst / Path(f'{year}')).is_dir():
+        print(f'=== Downloading Global Hourly Archive for year: {year}')
+        with open(archive_dst,'wb') as f:
+            total_length = r.headers.get('content-length')
+            for chunk in progress.bar(r.iter_content(chunk_size=1024), expected_size=(total_length/1024) + 1): 
+                if chunk:
+                    f.write(chunk)
+                    f.flush()
+
+        with tarfile.open(archive_dst) as f:
+            f.extractall(path=archive_dst.parent)
+    else:
+        print(f'Weather Archive for year {year} found')
 
     station_file_list = glob.glob(archive_dst / Path(f'year') / '*.csv')
     filtered_file_list =[file for file in station_file_list if Path(file).parts[-1][:-4] in tagged_stations['id'].unique()]
